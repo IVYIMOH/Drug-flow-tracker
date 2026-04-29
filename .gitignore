@@ -1,0 +1,20 @@
+# Binaries
+/Drug-flow-tracker
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build cache
+/bin/
+/pkg/
+
+# Environment variables (IMPORTANT)
+.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+.env
