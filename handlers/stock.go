@@ -39,3 +39,33 @@ func AddStock(c *gin.Context) {
 		"high_price": highPrice,
 	})
 }
+
+func GetStock(c *gin.Context) {
+	rows, err := db.DB.Query(`
+	SELECT drug_name,
+	COALESCE(SUM(quantity), 0) -
+	COALESCE((
+		SELECT SUM(quantity)
+		FROM dispensations d
+		WHERE d.drug_name = s.drug_namenil
+		), 0) AS current_stock
+	FROM stock_entries s
+	GROUP BY drug_name
+	`)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	var results []gin.H
+
+	for rows.Next() {
+		var drug string
+		var available int
+		rows.Scan(&drug, &available)
+		results = append(results, gin.H{
+			"drug_name":    drug,
+			"available_stock": available,
+		})
+	}
+	c.JSON(200, results)
