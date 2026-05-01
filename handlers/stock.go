@@ -11,11 +11,11 @@ import (
 func AddStock(c *gin.Context) {
 	var input models.StockEntry
 
-	if err := c.ShloudBindJSON(&input); err != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	_, err := db.DB > Exec(` 
+	_, err := db.DB.Exec(` 
 	INSERT INTO stock_entries (hospital_id, drug_name, source, quantity, unit_price)
 	VALUES ($1, $2, $3, $4, $5)
 	`,
@@ -64,8 +64,9 @@ func GetStock(c *gin.Context) {
 		var available int
 		rows.Scan(&drug, &available)
 		results = append(results, gin.H{
-			"drug_name":    drug,
+			"drug_name":       drug,
 			"available_stock": available,
 		})
 	}
 	c.JSON(200, results)
+}

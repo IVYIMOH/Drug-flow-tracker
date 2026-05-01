@@ -7,11 +7,11 @@ import (
 )
 
 func GetInsights(c *gin.Context) {
-	rows, _ := d.DB Query(`
+	rows, _ := db.DB.Query(`
 	SELECT source, COUNT(*) FROM stock_entries GROUP BY source`)
 
-	total := 0 
-	private := 0 
+	total := 0
+	private := 0
 
 	for rows.Next() {
 		var source string
@@ -23,7 +23,7 @@ func GetInsights(c *gin.Context) {
 			private += count
 		}
 	}
-	privateRatio := float64(private) / float6e(total)
+	privateRatio := float64(private) / float64(total)
 
 	alert := ""
 	if privateRatio > 0.4 {
@@ -31,6 +31,6 @@ func GetInsights(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{
 		"private_ratio": privateRatio,
-		"alert":           alert,
+		"alert":         alert,
 	})
 }
