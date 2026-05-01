@@ -4,10 +4,9 @@ import (
 	"Drug-flow-tracker/handlers"
 
 	"github.com/gin-gonic/gin"
-
 )
 
-func SetuoRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine) {
 	r.POST("/stock", handlers.AddStock)
 	r.POST("/dispense", handlers.DispenseDrug)
 	r.GET("/stock", handlers.GetStock)
