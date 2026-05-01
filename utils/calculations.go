@@ -1,13 +1,23 @@
+// utils/price.go
 package utils
 
-func CheckHighPrice(drug string, price float64) bool {
-	kemsaPrices := map[string]float64{
-		"Amoxicillin": 10,
-	}
+type PriceCheckResult struct {
+	IsHigh  bool
+	IsKnown bool
+}
 
+// kemsaPrices should eventually be moved to the database
+var kemsaPrices = map[string]float64{
+	"Amoxicillin":   10,
+	"Paracetamol":   5,
+	"Metformin":     8,
+	"Ciprofloxacin": 15,
+}
+
+func CheckHighPrice(drug string, price float64) PriceCheckResult {
 	base, exists := kemsaPrices[drug]
 	if !exists {
-		return false
+		return PriceCheckResult{IsHigh: false, IsKnown: false}
 	}
-	return price > base*1.5
+	return PriceCheckResult{IsHigh: price > base*1.5, IsKnown: true}
 }
