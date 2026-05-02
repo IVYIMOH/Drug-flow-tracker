@@ -25,7 +25,7 @@ Go 1.21+
 PostgreSQL 17
 
 1. Clone the repo
-bashgit clone https://github.com/YOUR_USERNAME/Drug-flow-tracker.git
+bashgit clone https://github.com/IVYIMOH/Drug-flow-tracker.git
 cd Drug-flow-tracker
 2. Set up the database
 bashpsql -U postgres
