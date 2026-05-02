@@ -1,10 +1,10 @@
 AfyaTrack 🏥
 
-Real-time drug supply tracker for Kenyan public hospitals — built to flag over-reliance on private suppliers over the government's KEMSA pipeline.
+Real-time drug supply tracker for Kenyan public hospitals - built to flag over-reliance on private suppliers over the government's KEMSA pipeline.
 
 
 The Problem
-Kenya's public hospitals face a persistent crisis: essential medicines run out, yet the same drugs are available — at inflated prices — from private suppliers. This isn't a supply problem, it's a visibility problem.
+Kenya's public hospitals face a persistent crisis: essential medicines run out, yet the same drugs are available - at inflated prices - from private suppliers. This isn't a supply problem, it's a visibility problem.
 AfyaTrack answers one question: "Is this hospital buying drugs it should be getting for free?"
 
 What It Does
@@ -111,7 +111,7 @@ Drug-flow-tracker/
 ├── routes/
 │   └── routes.go         # Route registration
 └── utils/
-    └── price.go          # KEMSA price benchmarking
+    └── calculations.go          # KEMSA price benchmarking
 
 Roadmap
 
