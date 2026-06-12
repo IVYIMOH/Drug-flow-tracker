@@ -2,8 +2,8 @@
 package handlers
 
 import (
-	"Drug-flow-tracker/db"
-	"Drug-flow-tracker/models"
+	"drug-flow-tracker/db"
+	"drug-flow-tracker/models"
 	"database/sql"
 	"net/http"
 

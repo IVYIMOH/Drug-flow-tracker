@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"Drug-flow-tracker/handlers"
+	"drug-flow-tracker/handlers"
 
 	"github.com/gin-gonic/gin"
 )

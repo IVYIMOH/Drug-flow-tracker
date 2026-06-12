@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Drug-flow-tracker/db"
-	"Drug-flow-tracker/routes"
+	"drug-flow-tracker/db"
+	"drug-flow-tracker/routes"
 
 	"github.com/gin-gonic/gin"
 )

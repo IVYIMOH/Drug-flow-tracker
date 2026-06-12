@@ -1,4 +1,4 @@
-module Drug-flow-tracker
+module drug-flow-tracker
 
 go 1.25.0
 

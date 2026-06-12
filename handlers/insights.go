@@ -2,7 +2,7 @@
 package handlers
 
 import (
-	"Drug-flow-tracker/db"
+	"drug-flow-tracker/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
