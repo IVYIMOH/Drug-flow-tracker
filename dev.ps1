@@ -1,4 +1,4 @@
-$env:DB_USER = "postgres"
-$env:DB_PASSWORD = "REDACTED"
-$env:DB_NAME = "drugflow"
+$exportDB_USER = "postgres"
+$exportDB_PASSWORD = "REDACTED"
+$exportDB_NAME = "drugflow"
 go run main.go

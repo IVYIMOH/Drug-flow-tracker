@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfyaTrack — Clinical Precision Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-surface":"#191c1d","inverse-primary":"#84d6b9","primary-fixed":"#a0f3d4",
+          "on-secondary-fixed":"#0d1f1b","surface-container-low":"#f2f4f5",
+          "on-tertiary-fixed":"#3b0804","inverse-on-surface":"#eff1f2","outline":"#6f7a74",
+          "error-container":"#ffdad6","on-primary-fixed":"#002117","on-secondary":"#ffffff",
+          "surface-bright":"#f8fafb","on-primary-container":"#9aedcf","on-tertiary":"#ffffff",
+          "on-secondary-container":"#566863","on-tertiary-fixed-variant":"#743329",
+          "critical-red":"#EF4444","background":"#f8fafb","success-green":"#22C55E",
+          "outline-variant":"#bec9c3","primary-fixed-dim":"#84d6b9","on-surface-variant":"#3f4944",
+          "on-background":"#191c1d","surface-tint":"#086b53","surface":"#f8fafb",
+          "on-primary-fixed-variant":"#00513e","primary":"#005440","alert-orange":"#F97316",
+          "surface-container-high":"#e6e8e9","surface-container":"#eceeef","primary-container":"#0f6e56",
+          "on-secondary-fixed-variant":"#394a45","tertiary-container":"#954c41","error":"#ba1a1a",
+          "on-primary":"#ffffff","tertiary-fixed":"#ffdad4","surface-border":"#E2E8F0",
+          "surface-dim":"#d8dadb","tertiary-fixed-dim":"#ffb4a8","secondary-fixed-dim":"#b7cbc4",
+          "surface-container-lowest":"#ffffff","secondary-fixed":"#d3e7e0","surface-variant":"#e1e3e4",
+          "on-tertiary-container":"#ffd3cc","text-main":"#1A2E29","on-error-container":"#93000a",
+          "inverse-surface":"#2e3132","text-muted":"#64748B","secondary-container":"#d3e7e0",
+          "secondary":"#50625d","on-error":"#ffffff","surface-container-highest":"#e1e3e4",
+          "tertiary":"#78352b"
+        },
+        borderRadius:{ DEFAULT:"1rem",lg:"2rem",xl:"3rem",full:"9999px" },
+        fontFamily:{ sans:["Inter","sans-serif"] }
+      }
+    }
+  }
+</script>
+<style>
+  body{background-color:#f8fafb;color:#1A2E29;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
+  .tab-content{display:none;}.tab-content.active{display:block;}
+  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#bec9c3;border-radius:10px;}
+  .metric-card{transition:transform 0.2s ease,box-shadow 0.2s ease;}.metric-card:active{transform:scale(0.98);}
+  .nav-button.active{color:#005440;background-color:#a0f3d4;}.nav-button.active i{color:#005440;}
+  canvas{max-width:100%!important;}
+  .api-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:9999px;}
+  .api-pill.online{background:#dcfce7;color:#166534;}.api-pill.offline{background:#fee2e2;color:#991b1b;}.api-pill.checking{background:#f1f5f9;color:#475569;}
+  .spinner{width:12px;height:12px;border:2px solid #a0f3d4;border-top-color:#005440;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:9999;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+  #toast.hidden{opacity:0;}#toast.show{opacity:1;}
+</style>
+</head>
+<body class="min-h-screen pb-24 lg:pb-0">
+
+<div id="toast" class="hidden">
+  <div id="toast-inner" class="px-5 py-2.5 rounded-full text-xs font-bold shadow-xl text-white bg-primary"></div>
+</div>
+
+<!-- Header -->
+<header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-surface-border px-4 py-3 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shadow-sm">
+      <i class="ti ti-activity-heartbeat text-xl"></i>
+    </div>
+    <div>
+      <h1 class="text-base font-bold text-primary leading-tight">AfyaTrack</h1>
+      <p class="text-[11px] text-on-surface-variant font-medium uppercase tracking-wider">Clinical Transparency</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="api-pill checking" id="api-status">
+      <span class="spinner" id="api-spinner"></span>
+      <span id="api-status-text">Connecting</span>
+    </div>
+    <div class="hidden animate-pulse" id="top-alert">
+      <div class="bg-error-container text-on-error-container px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 border border-error/20">
+        <i class="ti ti-alert-triangle text-sm"></i>
+        <span class="hidden sm:inline">Critical Alert</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 lg:p-6">
+
+  <!-- Desktop tab bar -->
+  <div class="hidden lg:flex gap-1 mb-6 bg-white border border-surface-border rounded-2xl p-1.5 w-fit shadow-sm">
+    <button class="nav-button active px-5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2" id="nav-overview" onclick="switchTab('overview')"><i class="ti ti-dashboard"></i> Overview</button>
+    <button class="nav-button px-5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2" id="nav-stock" onclick="switchTab('stock')"><i class="ti ti-plus"></i> Add Stock</button>
+    <button class="nav-button px-5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2" id="nav-dispense" onclick="switchTab('dispense')"><i class="ti ti-pill"></i> Dispense</button>
+    <button class="nav-button px-5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2" id="nav-insights" onclick="switchTab('insights')"><i class="ti ti-chart-line"></i> Insights</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-content active space-y-6" id="tab-overview">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="metric-card bg-surface-container-lowest border border-surface-border p-4 rounded-2xl shadow-sm">
+        <div class="flex items-center gap-2 text-on-surface-variant mb-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><i class="ti ti-pill text-sm"></i></div><span class="text-xs font-semibold uppercase tracking-tight">Total Stock</span></div>
+        <div class="text-2xl font-bold text-on-surface" id="m-total">—</div>
+      </div>
+      <div class="metric-card bg-primary-fixed border border-primary/10 p-4 rounded-2xl shadow-sm">
+        <div class="flex items-center gap-2 text-on-primary-fixed-variant mb-2"><div class="w-7 h-7 rounded-lg bg-on-primary-fixed/10 flex items-center justify-center"><i class="ti ti-building-hospital text-sm"></i></div><span class="text-xs font-semibold uppercase tracking-tight">KEMSA Units</span></div>
+        <div class="text-2xl font-bold text-on-primary-fixed" id="m-kemsa">—</div>
+      </div>
+      <div class="metric-card bg-surface-container-lowest border border-surface-border p-4 rounded-2xl shadow-sm">
+        <div class="flex items-center gap-2 text-on-surface-variant mb-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><i class="ti ti-cash text-sm"></i></div><span class="text-xs font-semibold uppercase tracking-tight">Private Units</span></div>
+        <div class="text-2xl font-bold" id="m-private">—</div>
+      </div>
+      <div class="metric-card bg-surface-container-lowest border border-surface-border p-4 rounded-2xl shadow-sm">
+        <div class="flex items-center gap-2 text-on-surface-variant mb-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center"><i class="ti ti-package text-sm"></i></div><span class="text-xs font-semibold uppercase tracking-tight">Available</span></div>
+        <div class="text-2xl font-bold text-on-surface" id="m-available">—</div>
+      </div>
+    </div>
+
+    <div class="hidden" id="alert-banner">
+      <div class="bg-error-container text-on-error-container p-4 rounded-2xl border border-error/20 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-full bg-error/10 flex-shrink-0 flex items-center justify-center"><i class="ti ti-alert-triangle text-xl text-error"></i></div>
+        <div class="space-y-1">
+          <p class="font-bold text-sm">High Reliance on Private Suppliers</p>
+          <p class="text-xs leading-relaxed opacity-90">Private procurement exceeds 40% of total stock. This facility may be bypassing the KEMSA pipeline. Investigation may be required.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-sm font-bold text-on-surface-variant flex items-center gap-2"><i class="ti ti-chart-pie text-primary"></i> Supply Source Ratio</h3>
+        </div>
+        <div class="relative h-48 flex items-center justify-center">
+          <canvas id="ratioChart"></canvas>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span class="text-2xl font-bold" id="ratio-pct">0%</span>
+            <span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Private</span>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-center gap-6">
+          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-primary"></span><span class="text-xs font-medium text-on-surface-variant">KEMSA</span></div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-tertiary"></span><span class="text-xs font-medium text-on-surface-variant">Private</span></div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-2 bg-white border border-surface-border rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-on-surface-variant flex items-center gap-2"><i class="ti ti-stack text-primary"></i> Available Stock Inventory</h3>
+          <button onclick="loadOverview()" class="text-xs text-primary font-semibold flex items-center gap-1 hover:opacity-70"><i class="ti ti-refresh text-xs"></i> Refresh</button>
+        </div>
+        <div class="space-y-2 max-h-[320px] overflow-y-auto pr-2" id="stock-list">
+          <div class="text-center py-12 text-on-surface-variant/50 flex flex-col items-center"><i class="ti ti-database-off text-3xl mb-2"></i><span class="text-sm">No inventory records found.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm">
+      <h3 class="text-sm font-bold text-on-surface-variant mb-6 flex items-center gap-2"><i class="ti ti-chart-bar text-primary"></i> Stock Levels by Drug</h3>
+      <div class="h-64"><canvas id="stockChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ADD STOCK -->
+  <div class="tab-content space-y-6" id="tab-stock">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white border border-surface-border rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-primary mb-6">Log Stock Entry</h3>
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Hospital ID</label>
+              <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="s-hospital" type="number" value="1" min="1"/>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Drug Name</label>
+              <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="s-drug" placeholder="Amoxicillin" type="text" list="drug-list"/>
+              <datalist id="drug-list">
+                <option value="Amoxicillin"/><option value="Paracetamol"/><option value="Metformin"/>
+                <option value="Ciprofloxacin"/><option value="Quinine"/><option value="Cotrimoxazole"/>
+              </datalist>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Source</label>
+              <select class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="s-source">
+                <option value="KEMSA">KEMSA</option><option value="PRIVATE">PRIVATE</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Qty</label>
+              <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="s-qty" placeholder="100" type="number" min="1"/>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">KSh/Unit</label>
+              <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="s-price" placeholder="10" step="0.01" type="number" min="0"/>
+            </div>
+          </div>
+          <button class="w-full py-4 bg-primary text-on-primary rounded-full font-bold shadow-md hover:bg-primary-container transition-all flex items-center justify-center gap-2" id="stock-btn" onclick="addStock()">
+            <i class="ti ti-plus"></i> Confirm Entry
+          </button>
+          <div class="text-center text-xs font-medium h-4" id="stock-msg"></div>
+        </div>
+      </div>
+      <div class="bg-white border border-surface-border rounded-2xl p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-on-surface-variant mb-6 uppercase tracking-wider">Recent Stock Entries</h3>
+        <div class="space-y-2 overflow-y-auto max-h-[400px]" id="recent-entries">
+          <div class="text-center py-12 text-on-surface-variant/50">No entries yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISPENSE -->
+  <div class="tab-content space-y-6" id="tab-dispense">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white border border-surface-border rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-primary mb-6">Dispense Drug</h3>
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Hospital ID</label>
+            <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="d-hospital" type="number" value="1" min="1"/>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Drug Name</label>
+            <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="d-drug" placeholder="Amoxicillin" type="text" list="drug-list"/>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold uppercase text-on-surface-variant px-1">Quantity to Dispense</label>
+            <input class="w-full rounded-full border-surface-border bg-surface-container-lowest focus:ring-primary focus:border-primary px-4" id="d-qty" placeholder="20" type="number" min="1"/>
+          </div>
+          <button class="w-full py-4 bg-tertiary text-on-tertiary rounded-full font-bold shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2" id="dispense-btn" onclick="dispenseDrug()">
+            <i class="ti ti-arrow-right"></i> Process Dispensation
+          </button>
+          <div class="text-center text-xs font-medium h-4" id="dispense-msg"></div>
+        </div>
+      </div>
+      <div class="bg-white border border-surface-border rounded-2xl p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-on-surface-variant mb-6 uppercase tracking-wider">Dispensation Log</h3>
+        <div class="space-y-2 overflow-y-auto max-h-[400px]" id="dispense-log">
+          <div class="text-center py-12 text-on-surface-variant/50">No dispensations logged</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="tab-content space-y-6" id="tab-insights">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-surface-container-lowest border border-surface-border p-5 rounded-2xl flex flex-col items-center text-center">
+        <span class="text-[10px] font-bold text-on-surface-variant uppercase mb-2">Private Ratio</span>
+        <span class="text-3xl font-bold" id="i-ratio">—</span>
+      </div>
+      <div class="bg-surface-container-lowest border border-surface-border p-5 rounded-2xl flex flex-col items-center text-center">
+        <span class="text-[10px] font-bold text-on-surface-variant uppercase mb-2">Alert Threshold</span>
+        <span class="text-3xl font-bold text-primary">40%</span>
+      </div>
+      <div class="bg-error-container border border-error/10 p-5 rounded-2xl flex flex-col items-center text-center">
+        <span class="text-[10px] font-bold text-on-error-container uppercase mb-2">Price Flags</span>
+        <span class="text-3xl font-bold text-error" id="i-flags">—</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm">
+        <h3 class="text-sm font-bold text-on-surface-variant mb-4 flex items-center gap-2"><i class="ti ti-chart-dots text-primary"></i> Sourcing History</h3>
+        <div class="flex gap-4 mb-4">
+          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-primary"></span><span class="text-xs font-medium text-on-surface-variant">KEMSA</span></div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-tertiary"></span><span class="text-xs font-medium text-on-surface-variant">Private</span></div>
+        </div>
+        <div class="h-64"><canvas id="timeChart"></canvas></div>
+      </div>
+      <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm">
+        <h3 class="text-sm font-bold text-on-surface-variant mb-6 flex items-center gap-2"><i class="ti ti-alert-circle text-error"></i> Price Anomalies Detected</h3>
+        <div class="space-y-2 overflow-y-auto max-h-[300px]" id="price-anomalies">
+          <div class="text-center py-12 text-on-surface-variant/50 text-xs">No price flags found</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Mobile nav -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-lg border-t border-surface-border px-4 py-2 flex items-center justify-around pb-6 lg:hidden">
+  <button class="nav-button active flex flex-col items-center gap-1 p-2 rounded-2xl min-w-[70px] transition-colors" id="nav-overview-mob" onclick="switchTab('overview')"><i class="ti ti-dashboard text-lg"></i><span class="text-[10px] font-bold uppercase tracking-tighter">Overview</span></button>
+  <button class="nav-button flex flex-col items-center gap-1 p-2 rounded-2xl min-w-[70px] transition-colors" id="nav-stock-mob" onclick="switchTab('stock')"><i class="ti ti-plus text-lg"></i><span class="text-[10px] font-bold uppercase tracking-tighter">Stock</span></button>
+  <button class="nav-button flex flex-col items-center gap-1 p-2 rounded-2xl min-w-[70px] transition-colors" id="nav-dispense-mob" onclick="switchTab('dispense')"><i class="ti ti-pill text-lg"></i><span class="text-[10px] font-bold uppercase tracking-tighter">Dispense</span></button>
+  <button class="nav-button flex flex-col items-center gap-1 p-2 rounded-2xl min-w-[70px] transition-colors" id="nav-insights-mob" onclick="switchTab('insights')"><i class="ti ti-chart-line text-lg"></i><span class="text-[10px] font-bold uppercase tracking-tighter">Insights</span></button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const API = 'http://localhost:8080';
+const KEMSA_PRICES = {Amoxicillin:10,Paracetamol:5,Metformin:8,Ciprofloxacin:15,Quinine:12,Cotrimoxazole:7};
+const C_PRIMARY='#005440', C_TERTIARY='#78352b';
+let sessionEntries=[], ratioChart, stockChart, timeChart;
+
+function showToast(msg, type='success') {
+  const t=document.getElementById('toast'), inner=document.getElementById('toast-inner');
+  inner.textContent=msg;
+  inner.className='px-5 py-2.5 rounded-full text-xs font-bold shadow-xl text-white '+(type==='error'?'bg-error':type==='warn'?'bg-alert-orange':'bg-primary');
+  t.className='show'; t.style.opacity='1';
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.className='hidden',300);},2800);
+}
+
+async function checkAPIStatus() {
+  try {
+    const r=await fetch(API+'/stock',{signal:AbortSignal.timeout(3000)});
+    document.getElementById('api-spinner').style.display='none';
+    const pill=document.getElementById('api-status'), txt=document.getElementById('api-status-text');
+    if(r.ok){pill.className='api-pill online';txt.textContent='API connected';}
+    else{pill.className='api-pill offline';txt.textContent='API error';}
+  } catch{
+    document.getElementById('api-spinner').style.display='none';
+    document.getElementById('api-status').className='api-pill offline';
+    document.getElementById('api-status-text').textContent='API offline';
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  ['nav-'+name,'nav-'+name+'-mob'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('active');});
+  if(name==='insights') loadInsights();
+  if(name==='overview') loadOverview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setBtnLoading(id, loading, label, icon) {
+  const btn=document.getElementById(id); if(!btn)return;
+  btn.disabled=loading;
+  btn.innerHTML=loading?'<span class="spinner"></span> Processing…':`<i class="${icon}"></i> ${label}`;
+}
+
+async function addStock() {
+  const hospital=parseInt(document.getElementById('s-hospital').value);
+  const drug=document.getElementById('s-drug').value.trim();
+  const source=document.getElementById('s-source').value;
+  const qty=parseInt(document.getElementById('s-qty').value);
+  const price=parseFloat(document.getElementById('s-price').value);
+  const msg=document.getElementById('stock-msg');
+  msg.textContent='';
+  if(!drug||!qty||!price||isNaN(qty)||isNaN(price)){msg.textContent='Please fill in all fields.';msg.className='text-center text-xs font-bold text-error';return;}
+  setBtnLoading('stock-btn',true);
+  try {
+    const res=await fetch(API+'/stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hospital_id:hospital,drug_name:drug,source,quantity:qty,unit_price:price})});
+    const data=await res.json();
+    if(!res.ok){msg.textContent=data.error||'Failed to add stock.';msg.className='text-center text-xs font-bold text-error';showToast(data.error||'Failed','error');}
+    else{
+      const hi=data.high_price;
+      msg.textContent=hi?'⚠️ Logged — price above KEMSA rate.':'Stock entry logged successfully.';
+      msg.className='text-center text-xs font-bold '+(hi?'text-alert-orange':'text-primary');
+      showToast(hi?`⚠️ ${drug} price flagged`:`${drug} stock logged`,hi?'warn':'success');
+      sessionEntries.unshift({drug,source,qty,price,time:new Date()});
+      document.getElementById('s-drug').value='';document.getElementById('s-qty').value='';document.getElementById('s-price').value='';
+      renderRecentEntries(); await loadOverview();
+    }
+  } catch{msg.textContent='Cannot reach API. Is the server running?';msg.className='text-center text-xs font-bold text-error';showToast('Cannot reach API','error');}
+  finally{setBtnLoading('stock-btn',false,'Confirm Entry','ti ti-plus');setTimeout(()=>msg.textContent='',4000);}
+}
+
+async function dispenseDrug() {
+  const hospital=parseInt(document.getElementById('d-hospital').value);
+  const drug=document.getElementById('d-drug').value.trim();
+  const qty=parseInt(document.getElementById('d-qty').value);
+  const msg=document.getElementById('dispense-msg');
+  msg.textContent='';
+  if(!drug||!qty||isNaN(qty)){msg.textContent='Please fill in all fields.';msg.className='text-center text-xs font-bold text-error';return;}
+  setBtnLoading('dispense-btn',true);
+  try {
+    const res=await fetch(API+'/dispense',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hospital_id:hospital,drug_name:drug,quantity:qty})});
+    const data=await res.json();
+    if(!res.ok){msg.textContent=data.error||'Dispensation failed.';msg.className='text-center text-xs font-bold text-error';showToast(data.error||'Failed','error');}
+    else{
+      msg.textContent='Dispensation recorded.';msg.className='text-center text-xs font-bold text-primary';
+      showToast(`${qty} units of ${drug} dispensed`);
+      const log=document.getElementById('dispense-log');
+      const t=new Date();
+      const row=`<div class="flex items-center justify-between p-3 bg-white border border-surface-border rounded-xl"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary"><i class="ti ti-arrow-up-right text-xs"></i></div><div><p class="text-xs font-bold text-on-surface">${drug}</p><p class="text-[10px] text-on-surface-variant">${t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p></div></div><span class="text-sm font-bold text-tertiary">&#8722;${qty}</span></div>`;
+      if(log.querySelector('.text-center'))log.innerHTML='';
+      log.insertAdjacentHTML('afterbegin',row);
+      document.getElementById('d-drug').value='';document.getElementById('d-qty').value='';
+      await loadOverview();
+    }
+  } catch{msg.textContent='Cannot reach API. Is the server running?';msg.className='text-center text-xs font-bold text-error';showToast('Cannot reach API','error');}
+  finally{setBtnLoading('dispense-btn',false,'Process Dispensation','ti ti-arrow-right');setTimeout(()=>msg.textContent='',4000);}
+}
+
+async function loadOverview() {
+  try {
+    const [sr,ir]=await Promise.all([fetch(API+'/stock'),fetch(API+'/insights')]);
+    if(!sr.ok||!ir.ok)return;
+    const stock=await sr.json(), ins=await ir.json();
+    const total=ins.total_units||0, priv=ins.private_units||0, kemsa=total-priv;
+    const avail=Array.isArray(stock)?stock.reduce((s,d)=>s+(d.available_stock||0),0):0;
+    const ratio=total>0?priv/total:0;
+    document.getElementById('m-total').textContent=total.toLocaleString();
+    document.getElementById('m-kemsa').textContent=kemsa.toLocaleString();
+    document.getElementById('m-available').textContent=avail.toLocaleString();
+    const pel=document.getElementById('m-private');
+    pel.textContent=priv.toLocaleString();
+    pel.className='text-2xl font-bold '+(ins.alert?'text-error':'text-on-surface');
+    document.getElementById('ratio-pct').textContent=(ratio*100).toFixed(0)+'%';
+    const alert=!!ins.alert;
+    document.getElementById('alert-banner').classList.toggle('hidden',!alert);
+    document.getElementById('top-alert').classList.toggle('hidden',!alert);
+    renderRatioChart(kemsa,priv);
+    renderStockList(stock);
+    renderStockChart(stock);
+  } catch(e){console.error(e);}
+}
+
+function renderRatioChart(kemsa,priv) {
+  const ctx=document.getElementById('ratioChart').getContext('2d');
+  const empty=kemsa+priv===0;
+  const data=empty?[1,0]:[kemsa,priv];
+  const colors=empty?['#e1e3e4','#e1e3e4']:[C_PRIMARY,C_TERTIARY];
+  if(ratioChart){ratioChart.data.datasets[0].data=data;ratioChart.data.datasets[0].backgroundColor=colors;ratioChart.update();return;}
+  ratioChart=new Chart(ctx,{type:'doughnut',data:{labels:['KEMSA','Private'],datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'82%',plugins:{legend:{display:false}}}});
+}
+
+function renderStockList(data) {
+  const el=document.getElementById('stock-list');
+  if(!data||!data.length){el.innerHTML='<div class="text-center py-12 text-on-surface-variant/50 flex flex-col items-center"><i class="ti ti-database-off text-3xl mb-2"></i><span class="text-sm">No inventory records found.</span></div>';return;}
+  el.innerHTML=data.map(d=>`<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-xl border border-surface-border"><div><p class="font-bold text-sm text-on-surface">${d.drug_name}</p></div><div class="text-right"><span class="text-lg font-bold ${d.available_stock<10?'text-error':'text-primary'}">${d.available_stock}</span><span class="text-[10px] block font-bold text-on-surface-variant uppercase">${d.available_stock<10?'Low':'Units'}</span></div></div>`).join('');
+}
+
+function renderStockChart(data) {
+  const ctx=document.getElementById('stockChart').getContext('2d');
+  const labels=data&&data.length?data.map(d=>d.drug_name):['No data'];
+  const values=data&&data.length?data.map(d=>d.available_stock):[0];
+  if(stockChart){stockChart.data.labels=labels;stockChart.data.datasets[0].data=values;stockChart.update();return;}
+  stockChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Available',data:values,backgroundColor:C_PRIMARY,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{border:{display:false},grid:{display:false},ticks:{font:{size:10,weight:'bold'}}},y:{border:{display:false},ticks:{font:{size:10}}}}}});
+}
+
+function renderRecentEntries() {
+  const el=document.getElementById('recent-entries');
+  if(!sessionEntries.length){el.innerHTML='<div class="text-center py-12 text-on-surface-variant/50">No entries yet</div>';return;}
+  el.innerHTML=sessionEntries.slice(0,10).map(e=>`<div class="flex items-center justify-between p-3 bg-white border border-surface-border rounded-xl"><div><p class="text-xs font-bold text-on-surface">${e.drug}</p><p class="text-[10px] text-on-surface-variant">${e.qty} units @ KSh ${e.price}</p></div><span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${e.source==='KEMSA'?'bg-primary-fixed text-on-primary-fixed':'bg-tertiary-fixed text-on-tertiary-fixed'} uppercase tracking-tighter">${e.source}</span></div>`).join('');
+}
+
+async function loadInsights() {
+  try {
+    const res=await fetch(API+'/insights');
+    if(!res.ok)return;
+    const data=await res.json();
+    const ratio=data.total_units>0?data.private_units/data.total_units:0;
+    const rel=document.getElementById('i-ratio');
+    rel.textContent=(ratio*100).toFixed(1)+'%';
+    rel.className='text-3xl font-bold '+(ratio>0.4?'text-error':'text-primary');
+    const anomalies=sessionEntries.filter(e=>{const b=KEMSA_PRICES[e.drug];return b&&e.price>b*1.5;});
+    document.getElementById('i-flags').textContent=anomalies.length;
+    const ael=document.getElementById('price-anomalies');
+    ael.innerHTML=anomalies.length?anomalies.map(e=>`<div class="p-3 bg-error-container/20 border border-error/10 rounded-xl"><div class="flex justify-between items-start"><span class="text-xs font-bold text-on-surface">${e.drug}</span><span class="text-[10px] font-bold text-error bg-error/10 px-2 py-0.5 rounded-full">+${((e.price/KEMSA_PRICES[e.drug]-1)*100).toFixed(0)}% over</span></div><p class="text-[10px] text-on-surface-variant mt-1">Logged: KSh ${e.price} | KEMSA ref: KSh ${KEMSA_PRICES[e.drug]}</p></div>`).join(''):'<div class="text-center py-12 text-on-surface-variant/50 text-xs">No price flags found</div>';
+    renderTimeChart();
+  } catch(e){console.error(e);}
+}
+
+function renderTimeChart() {
+  const ctx=document.getElementById('timeChart').getContext('2d');
+  const rev=[...sessionEntries].reverse();
+  const labels=rev.map((_,i)=>'E'+(i+1));
+  const kd=rev.map(e=>e.source==='KEMSA'?e.qty:0);
+  const pd=rev.map(e=>e.source==='PRIVATE'?e.qty:0);
+  if(timeChart){timeChart.data.labels=labels.length?labels:['No data'];timeChart.data.datasets[0].data=kd;timeChart.data.datasets[1].data=pd;timeChart.update();return;}
+  timeChart=new Chart(ctx,{type:'bar',data:{labels:labels.length?labels:['No data'],datasets:[{label:'KEMSA',data:kd,backgroundColor:C_PRIMARY,borderRadius:4},{label:'Private',data:pd,backgroundColor:C_TERTIARY,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},border:{display:false}},y:{ticks:{font:{size:10}},border:{display:false}}}}});
+}
+
+// NOTE: Add this CORS middleware to main.go if you see CORS errors in the browser console:
+// r.Use(func(c *gin.Context) {
+//   c.Header("Access-Control-Allow-Origin", "*")
+//   c.Header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+//   c.Header("Access-Control-Allow-Headers", "Content-Type")
+//   if c.Request.Method == "OPTIONS" { c.AbortWithStatus(204); return }
+//   c.Next()
+// })
+
+window.addEventListener('DOMContentLoaded',()=>{
+  renderRatioChart(0,0); renderStockChart([]);
+  checkAPIStatus(); loadOverview();
+  setInterval(loadOverview,30000);
+});
+</script>
+</body>
+</html>
