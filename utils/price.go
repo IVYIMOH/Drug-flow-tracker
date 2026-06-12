@@ -8,10 +8,10 @@ type PriceCheckResult struct {
 
 // kemsaPrices should eventually be moved to the database
 var kemsaPrices = map[string]float64{
-	"Amoxicillin":   10,
-	"Paracetamol":   5,
-	"Metformin":     8,
-	"Ciprofloxacin": 15,
+	"Amoxicillin":   10.0,
+	"Paracetamol":   5.0,
+	"Metformin":     8.0,
+	"Ciprofloxacin": 15.0,
 }
 
 func CheckHighPrice(drug string, price float64) PriceCheckResult {
