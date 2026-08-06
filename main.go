@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"drug-flow-tracker/db"
 	"drug-flow-tracker/routes"
 
@@ -11,7 +13,7 @@ func main() {
 	db.InitDB()
 
 	r := gin.Default()
-	
+
 	// Enable CORS
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -23,8 +25,14 @@ func main() {
 		}
 		c.Next()
 	})
-	
+
 	routes.SetupRoutes(r)
 
-	r.Run(":8080")
+	// Read dynamic port assigned by Railway, fallback to 8080 locally
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	r.Run(":" + port)
 }
